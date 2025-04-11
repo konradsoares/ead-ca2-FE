@@ -2,7 +2,7 @@
 	"development": {
         "config_id": "development",
         "app_name": "Recipe Tracker",
-		"webservice_host": "172.20.0.2", 
+		"webservice_host": "localhost", 
 		"webservice_port": "9090", 
 		"exposedPort": "22137"
 	}
