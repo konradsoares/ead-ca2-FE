@@ -160,4 +160,6 @@ http.createServer(function (req, res) {
 
 		}//end of "else"
 	}}
-).listen(global.gConfig.exposedPort);
+).listen(global.gConfig.exposedPort, '0.0.0.0', () => {
+  console.log(`Server running on port ${global.gConfig.exposedPort}`);
+});
