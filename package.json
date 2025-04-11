@@ -6,7 +6,7 @@
   "main": "fe-server.js",
   "scripts": {
     "start": "node fe-server.js",
-    "test": "mocha --exit"
+    "test": "mocha './**/*.spec.js' --exit"
   },
   "dependencies": {
     "mongodb": "^3.1.13",
