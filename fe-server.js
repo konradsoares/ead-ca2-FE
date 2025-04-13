@@ -43,7 +43,7 @@ metricsApp.listen(22138, () => {
 
 // HTML layout
 var header = '<!doctype html><html><head>';
-var body = '</head><body><div id="container"><div id="logo">' + global.gConfig.app_name + '</div><div id="space"></div><div id="form"><form id="form" action="/" method="post"><center><label class="control-label">Name:</label><input class="input" type="text" name="name"/><br /><label class="control-label">Ingredients:</label><input class="input" type="text" name="ingredients" /><br /><label class="control-label">Prep Time:</label><input class="input" type="number" name="prepTimeInMinutes" /><br />';
+var body = '</head><body><div id="container"><div id="logo">' + global.gConfig.app_name + 'Dev</div><div id="space"></div><div id="form"><form id="form" action="/" method="post"><center><label class="control-label">Name:</label><input class="input" type="text" name="name"/><br /><label class="control-label">Ingredients:</label><input class="input" type="text" name="ingredients" /><br /><label class="control-label">Prep Time:</label><input class="input" type="number" name="prepTimeInMinutes" /><br />';
 var submitButton = '<button class="button button1">Submit</button></div></form>';
 var endBody = '</div></body></html>';
 
