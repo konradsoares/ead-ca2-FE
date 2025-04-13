@@ -3,175 +3,143 @@ var url = require('url');
 const { parse } = require('querystring');
 var fs = require('fs');
 
-//Loading the config fileContents
+// Metrics: prom-client and express
+const client = require('prom-client');
+const express = require('express');
+const metricsApp = express();
+
+// Config
 const config = require('./config/config.json');
 const defaultConfig = config.development;
 global.gConfig = defaultConfig;
 
-//Generating some constants to be used to create the common HTML elements.
-var header = '<!doctype html><html>'+
-		     '<head>';
-				
-var body =  '</head><body><div id="container">' +
-				 '<div id="logo">' + global.gConfig.app_name + '</div>' +
-				 '<div id="space"></div>' +
-				 '<div id="form">' +
-				 '<form id="form" action="/" method="post"><center>'+
-				 '<label class="control-label">Name:</label>' +
-				 '<input class="input" type="text" name="name"/><br />'+			
-				 '<label class="control-label">Ingredients:</label>' +
-				 '<input class="input" type="text" name="ingredients" /><br />'+
-				 '<label class="control-label">Prep Time:</label>' +
-				 '<input class="input" type="number" name="prepTimeInMinutes" /><br />';
-
-var submitButton = '<button class="button button1">Submit</button>' +
-				   '</div></form>';
-				   
-var endBody = '</div></body></html>';				   
-const client = require('prom-client');
-const express = require('express');
-const app = express();
+// Setup metrics
 client.collectDefaultMetrics();
 
-app.get('/metrics', async (req, res) => {
+// HTTP Request Counter
+const httpRequestCounter = new client.Counter({
+  name: 'http_requests_total',
+  help: 'Total number of HTTP requests',
+  labelNames: ['method', 'route', 'status_code']
+});
+
+// Active Resources Gauge
+const activeResourcesGauge = new client.Gauge({
+  name: 'active_resources',
+  help: 'Number of active resources'
+});
+setInterval(() => {
+  activeResourcesGauge.set(process._getActiveResourcesInfo().length);
+}, 10000);
+
+// Expose /metrics via separate Express server
+metricsApp.get('/metrics', async (req, res) => {
   res.set('Content-Type', client.register.contentType);
   res.end(await client.register.metrics());
 });
-
-app.listen(22138, () => {
+metricsApp.listen(22138, () => {
   console.log('Metrics server running on port 22138');
 });
 
+// HTML layout
+var header = '<!doctype html><html><head>';
+var body = '</head><body><div id="container"><div id="logo">' + global.gConfig.app_name + '</div><div id="space"></div><div id="form"><form id="form" action="/" method="post"><center><label class="control-label">Name:</label><input class="input" type="text" name="name"/><br /><label class="control-label">Ingredients:</label><input class="input" type="text" name="ingredients" /><br /><label class="control-label">Prep Time:</label><input class="input" type="number" name="prepTimeInMinutes" /><br />';
+var submitButton = '<button class="button button1">Submit</button></div></form>';
+var endBody = '</div></body></html>';
+
+// Main HTTP Server
 http.createServer(function (req, res) {
-	console.log(req.url)
- 
-	//This validation needed to avoid duplicated (i.e., twice!) get / calls (due to the favicon.ico)
-	if (req.url === '/favicon.ico') {
-		 res.writeHead(200, {'Content-Type': 'image/x-icon'} );
-		 res.end();
-		 console.log('favicon requested');
-    }
-	else
-	{
-		res.writeHead(200, {'Content-Type': 'text/html'});
+  console.log(req.url);
 
-		var fileContents = fs.readFileSync('./public/default.css', {encoding: 'utf8'});
-		res.write(header);
-		res.write('<style>' + fileContents + '</style>');
-		res.write(body);
-		res.write(submitButton);
+  // Increment metric here
+  res.on('finish', () => {
+    httpRequestCounter.inc({ method: req.method, route: req.url, status_code: res.statusCode });
+  });
 
-		const http = require('http');
-		var timeout = 0
-		
-		// If POST, try saving the new recipe first (then still showing the existing recipes).
-		//********************************************************
-		if (req.method === 'POST') {
+  if (req.url === '/favicon.ico') {
+    res.writeHead(200, { 'Content-Type': 'image/x-icon' });
+    res.end();
+    console.log('favicon requested');
+    return;
+  }
 
-			timeout = 2000
+  res.writeHead(200, { 'Content-Type': 'text/html' });
+  var fileContents = fs.readFileSync('./public/default.css', { encoding: 'utf8' });
+  res.write(header);
+  res.write('<style>' + fileContents + '</style>');
+  res.write(body);
+  res.write(submitButton);
 
-			//Get the POST data
-			//------------------------------
-			var myJSONObject = {};
-			var qs = require('querystring');
+  const http = require('http');
+  var timeout = 0;
 
-			let body = '';
-			req.on('data', chunk => {
-				body += chunk.toString();
-			});
-			req.on('end', () => {
-				
-				var post = qs.parse(body);
-				myJSONObject["name"]=post["name"]
-				myJSONObject["ingredients"]=post["ingredients"].split(',');
-				myJSONObject["prepTimeInMinutes"]=post["prepTimeInMinutes"]
-				
-				//Send the data to the WS.
-				//------------------------------
-				const options = {
-				  hostname: global.gConfig.webservice_host,
-				  port: global.gConfig.webservice_port,
-				  path: '/recipe',
-				  method: 'POST',
-				  json: true,   // <--Very important!!!
-				};
+  if (req.method === 'POST') {
+    timeout = 2000;
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => {
+      var qs = require('querystring');
+      var post = qs.parse(body);
+      var myJSONObject = {
+        name: post["name"],
+        ingredients: post["ingredients"].split(','),
+        prepTimeInMinutes: post["prepTimeInMinutes"]
+      };
 
-				const req2 = http.request(options, (resp) => {
-				  let data = '';
+      const options = {
+        hostname: global.gConfig.webservice_host,
+        port: global.gConfig.webservice_port,
+        path: '/recipe',
+        method: 'POST',
+        json: true,
+      };
 
-				  resp.on('data', (chunk) => {
-					data += chunk;
-				  });
+      const req2 = http.request(options, (resp) => {
+        resp.on('data', () => {});
+        resp.on('end', () => { console.log("Data Saved!"); });
+      });
+      req2.setHeader('content-type', 'application/json');
+      req2.write(JSON.stringify(myJSONObject));
+      req2.end();
+    });
+  }
 
-				  resp.on('end', () => {
-					//TODO: Check that there were no problems with the saving.
-					console.log("Data Saved!");
+  if (req.method === 'POST') {
+    res.write('<div id="space"></div>');
+    res.write('<div id="logo">New recipe saved successfully! </div>');
+    res.write('<div id="space"></div>');
+  }
 
-					//res.write('<div id="space"></div>');
-					//res.write('<div id="logo">New recipe saved successfully! </div>');
-					//res.write('<div id="space"></div>');
-					  });
-				});
-				req2.setHeader('content-type', 'application/json');
-				req2.write(JSON.stringify(myJSONObject));	
-				req2.end();
-			});
-					
-		}
-		//else
-		//********************************************************			
-		{
-			//TODO: Check that there were no problems with the saving.
-			if (req.method === 'POST') {
-					res.write('<div id="space"></div>');
-					res.write('<div id="logo">New recipe saved successfully! </div>');
-					res.write('<div id="space"></div>');
-			}
+  setTimeout(() => {
+    const options = {
+      hostname: global.gConfig.webservice_host,
+      port: global.gConfig.webservice_port,
+      path: '/recipes',
+      method: 'GET',
+    };
 
-			//TODO: For simplicity, I opted for a timeout to wait for the save to be completed before reading the recipes (so that the recently saved one is there!). Better sync mechanisms can be used, such as Promises (https://alvarotrigo.com/blog/wait-1-second-javascript/)
-			setTimeout(function(){
+    const req3 = http.request(options, (resp) => {
+      let data = '';
+      resp.on('data', (chunk) => { data += chunk; });
+      resp.on('end', () => {
+        res.write('<div id="space"></div>');
+        res.write('<div id="logo">Your Previous Recipes</div>');
+        res.write('<div id="space"></div>');
+        res.write('<div id="results">Name | Ingredients | PrepTime');
+        res.write('<div id="space"></div>');
 
-				const options = {
-				  hostname: global.gConfig.webservice_host,
-				  port: global.gConfig.webservice_port,
-				  path: '/recipes',
-				  method: 'GET',
-				};
+        const myArr = JSON.parse(data);
+        for (let i = 0; i < myArr.length; i++) {
+          res.write(myArr[i].name + ' | ' + myArr[i].ingredients + ' | ' + myArr[i].prepTimeInMinutes + '<br/>');
+        }
 
-				const req = http.request(options, (resp) => {
-				  let data = '';
+        res.write('</div><div id="space"></div>');
+        res.end(endBody);
+      });
+    });
+    req3.end();
+  }, timeout);
 
-				  resp.on('data', (chunk) => {
-					data += chunk;
-				  });
-
-				  resp.on('end', () => {
-					//console.log(data);
-
-					res.write('<div id="space"></div>');
-					res.write('<div id="logo">Your Previous Recipes</div>');
-					res.write('<div id="space"></div>');
-					res.write('<div id="results">Name | Ingredients | PrepTime');
-					res.write('<div id="space"></div>');
-					const myArr = JSON.parse(data);
-					
-					i=0;
-					while (i < myArr.length) {
-					  res.write(myArr[i].name + ' | ' + myArr[i].ingredients + ' | ');
-					  res.write(myArr[i].prepTimeInMinutes + '<br/>');							
-					i++;
-					}
-					res.write('</div><div id="space"></div>');
-					
-					res.end(endBody);
-				  });
-				});
-				req.end();
-
-			}, timeout);
-
-		}//end of "else"
-	}}
-).listen(global.gConfig.exposedPort, '0.0.0.0', () => {
+}).listen(global.gConfig.exposedPort, '0.0.0.0', () => {
   console.log(`Server running on port ${global.gConfig.exposedPort}`);
 });
