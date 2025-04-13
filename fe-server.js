@@ -29,7 +29,7 @@ const activeResourcesGauge = new client.Gauge({
   help: 'Number of active resources'
 });
 setInterval(() => {
-  activeResourcesGauge.set(process._getActiveResourcesInfo().length);
+	activeResourcesGauge.set(process._getActiveHandles().length);
 }, 10000);
 
 // Expose /metrics via separate Express server
