@@ -81,7 +81,7 @@ http.createServer(function (req, res) {
       var qs = require('querystring');
       var post = qs.parse(body);
     
-      // Basic input validation
+      // Basic input validation added 14/04/25
       if (!post.name || !post.ingredients || !post.prepTimeInMinutes) {
         console.warn("⚠️ Invalid POST data received:", post);
         res.write('<div id="space"></div>');
