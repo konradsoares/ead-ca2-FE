@@ -80,10 +80,20 @@ http.createServer(function (req, res) {
     req.on('end', () => {
       var qs = require('querystring');
       var post = qs.parse(body);
+    
+      // Basic input validation
+      if (!post.name || !post.ingredients || !post.prepTimeInMinutes) {
+        console.warn("⚠️ Invalid POST data received:", post);
+        res.write('<div id="space"></div>');
+        res.write('<div id="logo">Invalid recipe data received. Please fill all fields.</div>');
+        res.write('<div id="space"></div>');
+        return res.end(endBody);
+      }
+    
       var myJSONObject = {
-        name: post["name"],
-        ingredients: post["ingredients"].split(','),
-        prepTimeInMinutes: post["prepTimeInMinutes"]
+        name: post.name,
+        ingredients: post.ingredients.split(','),
+        prepTimeInMinutes: post.prepTimeInMinutes
       };
 
       const options = {
