@@ -6,7 +6,10 @@
   "main": "fe-server.js",
   "scripts": {
     "start": "node fe-server.js",
-    "test": "mocha './**/*.spec.js' --exit"
+    "test": "mocha './**/*.spec.js' --exit",
+    "lint": "eslint . --ext .js",
+    "audit": "npm audit --audit-level=high",
+    "perf": "lighthouse http://localhost:3000 --quiet --chrome-flags='--headless' --output=json --output-path=./lighthouse-report.json"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -15,9 +18,10 @@
     "request": "^2.81.0",
     "sinon": "^15.0.4"
   },
-  "test-unit": "NODE_ENV=test mocha '/**/*.spec.js'",
   "devDependencies": {
     "chai": "^4.3.7",
-    "mocha": "^10.2.0"
+    "mocha": "^10.2.0",
+    "eslint": "^8.57.0",
+    "lighthouse": "^11.6.0"
   }
 }
