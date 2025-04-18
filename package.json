@@ -6,7 +6,7 @@
   "main": "fe-server.js",
   "scripts": {
     "start": "node fe-server.js",
-    "test": "mocha './tests/**/*.spec.js' --exit",
+    "test": "mocha '**/*.spec.js' --exit",
     "lint": "eslint . --ext .js",
     "audit": "npm audit --audit-level=high",
     "perf": "lighthouse http://localhost:3000 --quiet --chrome-flags='--headless' --output=json --output-path=./lighthouse-report.json"
