@@ -21,7 +21,23 @@
   "devDependencies": {
     "chai": "^4.3.7",
     "mocha": "^10.2.0",
-    "eslint": "^8.57.0",
-    "lighthouse": "^11.6.0"
+    "eslint": "^8.56.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^6.1.1",
+    "lighthouse": "^11.15.0"
+  },
+  "eslintConfig": {
+    "env": {
+      "es2021": true,
+      "node": true,
+      "mocha": true
+    },
+    "extends": "standard",
+    "rules": {
+      "semi": ["error", "always"],
+      "quotes": ["error", "single"]
+    }
   }
 }
