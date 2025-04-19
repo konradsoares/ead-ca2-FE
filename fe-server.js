@@ -55,7 +55,11 @@ http.createServer(function (req, res) {
   res.on('finish', () => {
     httpRequestCounter.inc({ method: req.method, route: req.url, status_code: res.statusCode });
   });
-
+  // Health check endpoint (non-invasive)
+  if (req.url === '/health') {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    return res.end('OK');
+  }
   if (req.url === '/favicon.ico') {
     res.writeHead(200, { 'Content-Type': 'image/x-icon' });
     res.end();
