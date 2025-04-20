@@ -28,6 +28,9 @@
     "eslint-plugin-promise": "^6.1.1",
     "lighthouse": "^12.5.1"
   },
+  "resolutions": {
+    "path-to-regexp": "6.3.0"
+  },
   "eslintConfig": {
     "env": {
       "es2021": true,
