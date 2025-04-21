@@ -28,6 +28,9 @@
     "eslint-plugin-promise": "^6.1.1",
     "lighthouse": "^12.5.1"
   },
+  "resolutions": {
+    "cross-spawn": "7.0.5"
+  },
   "eslintConfig": {
     "env": {
       "es2021": true,
